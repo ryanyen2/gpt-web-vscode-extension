@@ -1,0 +1,141 @@
+{
+  "name": "gpt-web-vscode-extension",
+  "displayName": "gpt-web",
+  "description": "gpt, web search, logger",
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.78.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+				"command": "WebSearch.webSearchMenu",
+				"title": "Web Search selected text",
+				"when": "editorTextFocus"
+			},
+      {
+        "command": "gpt-web.webSearch",
+        "title": "Web Search",
+        "when": "editorTextFocus"
+      },
+      {
+        "command": "gpt-web.askGpt",
+        "title": "Explain selected code",
+        "when": "editorTextFocus"
+      }
+    ],
+    "menus": {
+      "editor/context": [
+        {
+          "command": "gpt-web.askGpt",
+          "when": "editorTextFocus"
+        },
+        {
+          "command": "gpt-web.webSearch",
+          "when": "editorTextFocus"
+        }
+      ]
+    },
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "gpt-web-view-container",
+          "title": "GPT Web",
+          "icon": "resources/icon.png"
+        }
+      ]
+    },
+    "views": {
+      "gpt-web-view-container": [
+        {
+          "type": "webview",
+          "id": "gpt-web.chatView",
+          "name": "Converstaion Window"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "gpt-web",
+      "properties": {
+        "gpt-web.queryPrefix": {
+          "type": "string",
+          "default": "https://www.google.com/search?q=%SELECTION%",
+          "description": "Search Query Prefix"
+        },
+        "gpt-web.searchEngine": {
+          "type": "string",
+          "default": "google",
+          "enum": [
+            "google",
+            "bing",
+            "duckduckgo",
+            "yahoo",
+            "baidu",
+            "yandex"
+          ],
+          "enumDescriptions": [
+            "Google",
+            "Bing",
+            "DuckDuckGo",
+            "Yahoo",
+            "Baidu",
+            "Yandex"
+          ],
+          "description": "The search engine to use when searching the web."
+        },
+        "gpt-web.ApiKey": {
+          "type": "string",
+          "default": "",
+          "scope": "application",
+          "markdownDescription": "Your personal OpenAI API key. If you don't have one, generate a new one [here](https://beta.openai.com/account/api-keys).\n\nDon't forget to [restart your extension](command:workbench.action.reloadWindow) once you finished configuring so that your extension gets loaded with the new configurations."
+        },
+        "gpt-web.models": {
+          "type": "string",
+          "default": "ChatGPT",
+          "enum": [
+            "text-davinci-003",
+            "ChatGPT",
+            "gpt-4"
+          ],
+          "enumDescriptions": [
+            "GPT-3 models can understand and generate natural language.",
+            "Large language model trained by OpenAI that is optimized for dialogue.",
+            "Large language model that performs better than ChatGPT. Only available for people that have access to GPT4."
+          ],
+          "markdownDescription": "Choose the OpenAI model you want to use for generating your AI responses.\n\nYou can find more details about each model and their pricing [here](https://beta.openai.com/docs/models)."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "yarn run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "yarn run compile && yarn run lint",
+    "lint": "eslint src --ext ts",
+    "test": "node ./out/test/runTest.js"
+  },
+  "devDependencies": {
+    "@types/glob": "^8.1.0",
+    "@types/mocha": "^10.0.1",
+    "@types/node": "16.x",
+    "@types/vscode": "^1.78.0",
+    "@typescript-eslint/eslint-plugin": "^5.56.0",
+    "@typescript-eslint/parser": "^5.56.0",
+    "@vscode/test-electron": "^2.3.0",
+    "eslint": "^8.36.0",
+    "glob": "^8.1.0",
+    "mocha": "^10.2.0",
+    "typescript": "^4.9.5"
+  },
+  "dependencies": {
+    "cheerio": "^1.0.0-rc.12",
+    "langchain": "^0.0.88",
+    "openai": "^3.2.1"
+  }
+}
