@@ -8,6 +8,7 @@ import {
 } from "langchain/prompts";
 import { BufferMemory } from "langchain/memory";
 import { ConversationChain } from "langchain/chains";
+import { LogType, logChatGPTEvent } from './logger';
 
 
 export default class GPTWebViewProvider implements vscode.WebviewViewProvider {
@@ -122,6 +123,8 @@ export default class GPTWebViewProvider implements vscode.WebviewViewProvider {
 
         questionPrompt = await this.processQuestion(questionPrompt, codeBlock);
 
+        logChatGPTEvent(LogType.AddRequest, "askGPT", questionPrompt);
+
         if (this.webView == null) {
             vscode.commands.executeCommand('gpt-web.chatView.focus');
         } else {
@@ -188,7 +191,10 @@ export default class GPTWebViewProvider implements vscode.WebviewViewProvider {
             value: this._response,
             id: this.currentMessageId
         });
-
+        if (this._response) {
+            logChatGPTEvent(LogType.AddResponse, "askGPT", this._response, this._response.includes("```"));
+        }
+        
         // remove the text selection
         const editor = vscode.window.activeTextEditor;
         if (editor && !editor.selection.isEmpty) {

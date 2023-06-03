@@ -4,7 +4,7 @@ import * as fs from 'fs';
 import { Configuration, OpenAIApi } from "openai";
 import GPTWebViewProvider from './webviewProvider';
 
-import { setLogFilePath, logUserEvent, logTextChanges, logTextSelections } from './logger';
+import {LogType, setLogFilePath, logUserEvent, logTextChanges, logTextSelections } from './logger';
 
 let openai: OpenAIApi | undefined;
 
@@ -139,29 +139,29 @@ export async function activate(context: vscode.ExtensionContext) {
 		vscode.workspace.onDidCreateFiles((event) => {
 			const action = "create file";
 			const content = event.files[0].fsPath;
-			logUserEvent("fileOperation", "onDidCreateFiles", action, content);
+			logUserEvent(LogType.FileOperation, "onDidCreateFiles", action, content);
 		}),
 		vscode.workspace.onDidOpenTextDocument((event) => {
 			const action = "open file";
 			const content = event.uri.fsPath;
-			logUserEvent("fileOperation", "onDidOpenTextDocument", action, content);
+			logUserEvent(LogType.FileOperation, "onDidOpenTextDocument", action, content);
 		}),
 		vscode.workspace.onDidDeleteFiles((event) => {
 			const action = "delete file";
 			const content = event.files[0].fsPath;
-			logUserEvent("fileOperation", "onDidDeleteFiles", action, content);
+			logUserEvent(LogType.FileOperation, "onDidDeleteFiles", action, content);
 		}),
 		vscode.workspace.onDidCloseTextDocument((event) => {
 			const action = "close file";
 			const content = event.uri.fsPath;
-			logUserEvent("fileOperation", "onDidCloseTextDocument", action, content);
+			logUserEvent(LogType.FileOperation, "onDidCloseTextDocument", action, content);
 		}),
 
 		// Watch for editor focus events
 		vscode.window.onDidChangeWindowState((event) => {
 			const action = "editor focus";
 			const content = event.focused ? "focused" : "unfocused";
-			logUserEvent("windowState", "onDidChangeWindowState", action, content);
+			logUserEvent(LogType.WindowState, "onDidChangeWindowState", action, content);
 		})
 		// vscode.window.onDidChangeTerminalState((event) => {
 		// 	const action = "terminal focus";

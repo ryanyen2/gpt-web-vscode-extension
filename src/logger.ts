@@ -41,8 +41,17 @@ Log types:
     - load / unload webview
 */
 
+export enum LogType {
+  TextChanges = "textChanges",
+  FileOperation = "fileOperation",
+  WindowState = "windowState",
+  TextSelections = "textSelections",
+  AddResponse = "addResponse",
+  AddRequest = "addRequest"
+}
+
 interface ExtensionLog {
-  logType: string;
+  logType: LogType;
   eventName: string;
   timestamp: number; // unix timestamp
 }
@@ -55,12 +64,17 @@ interface UserEvent extends ExtensionLog {
 
 interface TextChange extends ExtensionLog {
   filename: string;
-  contentChanges: string | readonly TextDocumentContentChangeEvent[];
+  contentChanges: readonly TextDocumentContentChangeEvent[];
 }
 
 interface TextSelection extends ExtensionLog {
   filename: string;
   selections: readonly Selection[];
+}
+
+interface ChatGPTEvent extends ExtensionLog {
+  content: string;
+  hasCode: boolean | undefined;
 }
 
 let logFilePath: string;
@@ -70,7 +84,20 @@ export function setLogFilePath(path: string) {
   console.log("File>> ", logFilePath);
 }
 
-export function logUserEvent(logType: string, eventName: string, action?: string, content?: string) {
+export function logChatGPTEvent(logType: LogType, eventName: string, content: string, hasCode?: boolean) {
+  let logEntry: ChatGPTEvent = {
+    logType,
+		eventName,
+		timestamp: Date.now(),
+    content,
+    hasCode,
+  };
+  const logFileContent = JSON.stringify(logEntry);
+  console.log(logFileContent)
+  fs.appendFileSync(logFilePath, logFileContent);
+}
+
+export function logUserEvent(logType: LogType, eventName: string, action?: string, content?: string) {
   let logEntry: UserEvent = {
     logType,
 		eventName,
@@ -114,7 +141,7 @@ export function logTextChanges(event: TextDocumentChangeEvent) {
   // 	logTextChanges(event, "edit");
   // }
   let logEntry: TextChange = {
-    logType: "textChanges",
+    logType: LogType.TextChanges,
 		eventName: "onDidChangeTextDocument",
 		timestamp: Date.now(),
 		filename: event.document.fileName,
@@ -127,7 +154,7 @@ export function logTextChanges(event: TextDocumentChangeEvent) {
 
 export function logTextSelections(event: TextEditorSelectionChangeEvent) {
   let logEntry: TextSelection = {
-    logType: "textSelections",
+    logType: LogType.TextSelections,
 		eventName: "onDidChangeTextEditorSelection",
 		timestamp: Date.now(),
 		filename: event.textEditor.document.fileName,
