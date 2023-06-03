@@ -1,9 +1,12 @@
 import * as vscode from 'vscode';
+import * as path from 'path';
+import * as fs from 'fs';
 import { Configuration, OpenAIApi } from "openai";
 import GPTWebViewProvider from './webviewProvider';
 
-let openai: OpenAIApi | undefined;
+import { setLogFilePath, logUserEvent, logTextChanges, logTextSelections } from './logger';
 
+let openai: OpenAIApi | undefined;
 
 export async function showInputBox() {
 	const result = await vscode.window.showInputBox({
@@ -105,8 +108,69 @@ export async function activate(context: vscode.ExtensionContext) {
 
 	});
 
+	// log user vscode actions
+	// https://code.visualstudio.com/api/references/vscode-api
+	const logUserAction = vscode.commands.registerCommand('extension.logUserAction:start', () => {
+		// Create log file for this user
+		const logFolderPath = '/home/briantu/ura/logs';
+		if (!fs.existsSync(logFolderPath)) {
+			fs.mkdirSync(logFolderPath, { recursive: true });
+		}
 
-	context.subscriptions.push(view, textSelection, askGPT, webSearch);
+		// store in json
+		const logFileName = `log_${new Date()
+			.toLocaleString()
+			.replace(/\//g, "-")
+			.replace(/,/g, "")
+			.replace(/:/g, "-")
+			.replace(/ /g, "_")}.json`;
+			setLogFilePath(path.join(logFolderPath, logFileName));
+
+		// Watch for text input events
+		vscode.workspace.onDidChangeTextDocument((event) => {
+			logTextChanges(event)
+		}),
+
+		vscode.window.onDidChangeTextEditorSelection((event) => {
+		  logTextSelections(event);
+		}),
+
+		// Watch for file events
+		vscode.workspace.onDidCreateFiles((event) => {
+			const action = "create file";
+			const content = event.files[0].fsPath;
+			logUserEvent("fileOperation", "onDidCreateFiles", action, content);
+		}),
+		vscode.workspace.onDidOpenTextDocument((event) => {
+			const action = "open file";
+			const content = event.uri.fsPath;
+			logUserEvent("fileOperation", "onDidOpenTextDocument", action, content);
+		}),
+		vscode.workspace.onDidDeleteFiles((event) => {
+			const action = "delete file";
+			const content = event.files[0].fsPath;
+			logUserEvent("fileOperation", "onDidDeleteFiles", action, content);
+		}),
+		vscode.workspace.onDidCloseTextDocument((event) => {
+			const action = "close file";
+			const content = event.uri.fsPath;
+			logUserEvent("fileOperation", "onDidCloseTextDocument", action, content);
+		}),
+
+		// Watch for editor focus events
+		vscode.window.onDidChangeWindowState((event) => {
+			const action = "editor focus";
+			const content = event.focused ? "focused" : "unfocused";
+			logUserEvent("windowState", "onDidChangeWindowState", action, content);
+		})
+		// vscode.window.onDidChangeTerminalState((event) => {
+		// 	const action = "terminal focus";
+		// 	const content = event.state.isInteractedWith ? "focused" : "unfocused";
+		// 	logUserEvent("windowState", "onDidChangeTerminalState", action, content);
+		// })
+	});
+
+	context.subscriptions.push(view, textSelection, askGPT, webSearch, logUserAction);
 }
 
 // This method is called when your extension is deactivated

@@ -27,6 +27,10 @@
         "command": "gpt-web.askGpt",
         "title": "Explain selected code",
         "when": "editorTextFocus"
+      },
+      {
+        "command": "extension.logUserAction:start",
+        "title": "Start Logging User Action"
       }
     ],
     "menus": {
