@@ -8,7 +8,7 @@ import {
 } from "langchain/prompts";
 import { BufferMemory } from "langchain/memory";
 import { ConversationChain } from "langchain/chains";
-import { LogType, logChatGPTEvent } from './logger';
+import { LogType, logChatGPTEvent, logUserEvent } from './logger';
 
 
 export default class GPTWebViewProvider implements vscode.WebviewViewProvider {
@@ -130,6 +130,7 @@ export default class GPTWebViewProvider implements vscode.WebviewViewProvider {
         } else {
             this.webView.show(true);
         }
+        logUserEvent(LogType.WindowState, 'onDidChangeWindowState', 'gpt focus', 'focused');
 
         this.inProgress = true;
         this.sendMessage({ type: 'showInProgress', inProgress: this.inProgress });

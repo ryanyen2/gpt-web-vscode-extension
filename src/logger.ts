@@ -47,7 +47,10 @@ export enum LogType {
   WindowState = "windowState",
   TextSelections = "textSelections",
   AddResponse = "addResponse",
-  AddRequest = "addRequest"
+  AddRequest = "addRequest",
+  WebSearch = "webSearch",
+  TerminalState = "terminalState",
+  DocumentState = "documentState",
 }
 
 interface ExtensionLog {
@@ -58,17 +61,19 @@ interface ExtensionLog {
 
 interface UserEvent extends ExtensionLog {
   eventName: string;
-  action: string | undefined;
   content: string | undefined;
+  payload: any;
 }
 
 interface TextChange extends ExtensionLog {
   filename: string;
   contentChanges: readonly TextDocumentContentChangeEvent[];
+  payload: any;
 }
 
 interface TextSelection extends ExtensionLog {
   filename: string;
+  context: string;
   selections: readonly Selection[];
 }
 
@@ -76,6 +81,13 @@ interface ChatGPTEvent extends ExtensionLog {
   content: string;
   hasCode: boolean | undefined;
 }
+
+interface TerminalEvent extends ExtensionLog {
+  terminalName: string;
+  isInteractedWithTerminal: boolean;
+  processId: any;
+}
+
 
 let logFilePath: string;
 
@@ -94,73 +106,83 @@ export function logChatGPTEvent(logType: LogType, eventName: string, content: st
   };
   const logFileContent = JSON.stringify(logEntry);
   console.log(logFileContent)
-  fs.appendFileSync(logFilePath, logFileContent);
+  fs.appendFileSync(logFilePath, logFileContent + "\r\n");
 }
 
-export function logUserEvent(logType: LogType, eventName: string, action?: string, content?: string) {
+
+export function logTerminalEvent(logType: LogType, eventName: string, terminalName: string, isInteractedWithTerminal: boolean, processId?: any) {
+  let logEntry: TerminalEvent = {
+    logType,
+    eventName,
+    timestamp: Date.now(),
+    terminalName,
+    isInteractedWithTerminal,
+    processId,
+  };
+  const logFileContent = JSON.stringify(logEntry);
+  // console.log(logFileContent)
+  fs.appendFileSync(logFilePath, logFileContent + "\r\n");
+}
+
+export function logUserEvent(logType: LogType, eventName: string, content?: string, payload?: any) {
   let logEntry: UserEvent = {
     logType,
 		eventName,
 		timestamp: Date.now(),
-    action,
     content,
+    payload,
   };
   const logFileContent = JSON.stringify(logEntry);
   // console.log(logFileContent)
-  fs.appendFileSync(logFilePath, logFileContent);
+  fs.appendFileSync(logFilePath, logFileContent + "\r\n");
 }
 
-export function logTextChanges(event: TextDocumentChangeEvent) {
-  // let contentChanges;
-  // const textBeforeCursor = event.document.getText(
-  //   new vscode.Range(
-  //     event.document.positionAt(event.document.offsetAt(event.contentChanges[0].range.start) - 1),
-  //     event.document.positionAt(event.document.offsetAt(event.contentChanges[0].range.start))
-  //   )
-  // );
-  // const keyInput = event.contentChanges[0]
-  // console.log('keyInput>> ', keyInput);
-  // if (keyInput.text === " ") {
-  // 	contentChanges = "space";
-  // } else if (keyInput.text.includes("\n")) {
-  // 	contentChanges = "enter";
-  // } else if (keyInput.text.includes("\t")) {
-  // 	contentChanges = "tab";
-  // } else if (keyInput.text === "") {
-  // 	contentChanges = "backspaces"
-  // } else if (keyInput.text.length > 1) {
-  // 	contentChanges = keyInput.text;
-  // } 
+export function logTextChanges(document: vscode.TextDocument, changeReason: string, contentChanges: readonly TextDocumentContentChangeEvent[]) {
+  const { fileName, version, lineCount, languageId } = document;
 
-  // if == '': new world, == '//': new command
-  // if (textBeforeCursor === "") {
-  // 	logTextChanges(event, "new world");
-  // } else if (textBeforeCursor === "//") {
-  // 	logTextChanges(event, "new command");
-  // } else {
-  // 	logTextChanges(event, "edit");
-  // }
   let logEntry: TextChange = {
     logType: LogType.TextChanges,
-		eventName: "onDidChangeTextDocument",
 		timestamp: Date.now(),
-		filename: event.document.fileName,
-    contentChanges: event.contentChanges
+    filename: fileName,
+    contentChanges: contentChanges,
+    eventName: changeReason,
+    payload: {
+      version,
+      lineCount,
+      languageId,
+    }
   };
   const logFileContent = JSON.stringify(logEntry);
   // console.log(logFileContent);
-  fs.appendFileSync(logFilePath, logFileContent);
+  fs.appendFileSync(logFilePath, logFileContent + "\r\n");
 }
 
 export function logTextSelections(event: TextEditorSelectionChangeEvent) {
+
+  const selectedText = event.textEditor.document.getText(event.selections[0]);
+  if (selectedText.trim() === "" || selectedText.trim() === "\n" || selectedText.trim() === "\t") {
+    return;
+  } 
+  const { kind }: { kind: vscode.TextEditorSelectionChangeKind | undefined } = event;
+  let selectionType: string;
+  if (kind === vscode.TextEditorSelectionChangeKind.Mouse) {
+    selectionType = "mouse";
+  } else if (kind === vscode.TextEditorSelectionChangeKind.Keyboard) {
+    selectionType = "keyboard";
+  } else {
+    selectionType = "command";
+  }
+
   let logEntry: TextSelection = {
     logType: LogType.TextSelections,
-		eventName: "onDidChangeTextEditorSelection",
+		eventName: selectionType,
 		timestamp: Date.now(),
 		filename: event.textEditor.document.fileName,
-    selections: event.selections
+    selections: event.selections,
+    context: event.textEditor.document.getText(event.selections[0]),
   };
   const logFileContent = JSON.stringify(logEntry);
   // console.log(logFileContent);
-  fs.appendFileSync(logFilePath, logFileContent);
+
+  fs.appendFileSync(logFilePath, logFileContent + "\r\n");
 }
